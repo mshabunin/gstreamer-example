@@ -1,0 +1,16 @@
+cmake_minimum_required(VERSION 2.8)
+
+include(FindPkgConfig)
+pkg_check_modules(GST REQUIRED gstreamer-1.0)
+pkg_check_modules(GST_APP REQUIRED gstreamer-app-1.0)
+message(STATUS "GST_FOUND: ${GST_FOUND}")
+message(STATUS "GST_VERSION: ${GST_VERSION}")
+message(STATUS "GST_LIBRARIES: ${GST_LIBRARIES}")
+message(STATUS "GST_LDFLAGS: ${GST_LDFLAGS}")
+message(STATUS "GST_INCLUDE_DIRS: ${GST_INCLUDE_DIRS}")
+message(STATUS "GST_CFLAGS: ${GST_CFLAGS}")
+
+project(experiment)
+add_executable(${PROJECT_NAME} "main.cpp")
+target_include_directories(${PROJECT_NAME} PRIVATE ${GST_INCLUDE_DIRS} ${GST_APP_INCLUDE_DIRS})
+target_link_libraries(${PROJECT_NAME} PRIVATE ${GST_LDFLAGS} ${GST_APP_LDFLAGS})
