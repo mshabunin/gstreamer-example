@@ -211,7 +211,7 @@ int main(int argc, const char * argv[])
     cout << "Filename: " << filename << endl;
     stringstream p;
     p << "uridecodebin uri=file://" << filename << " ! "
-      << "appsink name=sink async=false sync=false drop=false max-buffers=1 emit-signals=false";
+      << "appsink name=sink async=false sync=false drop=false max-buffers=1 emit-signals=false wait-on-eos=false";
     cout << "Pipeline: " << p.str() << endl;
 
     GError * err = NULL;
@@ -236,8 +236,18 @@ int main(int argc, const char * argv[])
 
     gst_pipeline_use_clock(GST_PIPELINE(pipeline), NULL);
 
-    cout << "Sink async: " << boolalpha << (bool)gst_base_sink_is_async_enabled(GST_BASE_SINK(sink)) << endl;
-    cout << "Sink sync: " << boolalpha << (bool)gst_base_sink_get_sync(GST_BASE_SINK(sink)) << endl;
+    cout << "SINK options" << endl << boolalpha;
+    cout << "  sync: " << (bool)gst_base_sink_get_sync(GST_BASE_SINK(sink)) << endl;
+
+    cout << "  max lateness: " << gst_base_sink_get_max_lateness(GST_BASE_SINK(sink)) << endl;
+    cout << "  qos: " << (bool)gst_base_sink_is_qos_enabled(GST_BASE_SINK(sink)) << endl;
+    cout << "  async: " << (bool)gst_base_sink_is_async_enabled(GST_BASE_SINK(sink)) << endl;
+    cout << "  tuning sync: " << gst_base_sink_get_ts_offset(GST_BASE_SINK(sink)) << endl;
+    cout << "  latency: " << gst_base_sink_get_latency(GST_BASE_SINK(sink)) << endl;
+
+    cout << "  drop: " << (bool)gst_app_sink_get_drop(GST_APP_SINK(sink)) << endl;
+    cout << "  wait on EOS: " << (bool)gst_app_sink_get_wait_on_eos(GST_APP_SINK(sink)) << endl;
+    cout << "  max buffers: " << gst_app_sink_get_max_buffers(GST_APP_SINK(sink)) << endl;
 
     if (!changeState(pipeline, GST_STATE_PAUSED))
         return 6;
@@ -284,7 +294,7 @@ int main(int argc, const char * argv[])
         cout << endl << endl << "====================================" << endl << endl;
         gint64 prev_time = -1;
         int idx = -1;
-        while (true)
+        while (idx < 5)
         {
             cout << "============" << ++idx << " ==========" << endl;
             gboolean eos = gst_app_sink_is_eos(GST_APP_SINK(sink));
@@ -296,7 +306,15 @@ int main(int argc, const char * argv[])
 
             {
                 gint64 f_time = -1;
-                gst_element_query_position(GST_ELEMENT(sink), GST_FORMAT_TIME, &f_time);
+                for (int i = 0; i < 10; ++i)
+                {
+                    gint64 prev = f_time;
+                    gst_element_query_position(GST_ELEMENT(sink), GST_FORMAT_TIME, &f_time);
+                    cout << "...." << f_time << endl;
+                    if (prev > 0 && prev != f_time)
+                        cout << "try " << i << " - " << prev << " != " << f_time << endl;
+                    prev = f_time;
+                }
                 if (ns_per_frame != 0)
                 {
                     long pos = lrint(f_time / ns_per_frame) - 1;
