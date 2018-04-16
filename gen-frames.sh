@@ -24,6 +24,8 @@ convert \
 
 echo "Encoding..."
 
+#===============================================================================================
+
 gst-launch-1.0 \
     multifilesrc location=frames/frame_%03d.png caps="image/png,framerate=30/1" \
     ! pngdec \
@@ -41,6 +43,35 @@ gst-launch-1.0 \
     ! x264enc \
     ! qtmux \
     ! filesink location=frames/video.mp4
+
+gst-launch-1.0 \
+    multifilesrc location=frames/frame_%03d.png caps="image/png,framerate=30/1" \
+    ! pngdec \
+    ! videoconvert \
+    ! videorate \
+    ! x264enc \
+    ! avimux \
+    ! filesink location=frames/video.avi
+
+#===============================================================================================
+
+gst-launch-1.0 \
+    multifilesrc location=frames/frame_%03d.png caps="image/png,framerate=30/1" \
+    ! pngdec \
+    ! videoconvert \
+    ! videorate \
+    ! vp8enc \
+    ! webmmux \
+    ! filesink location=frames/video8.webm
+
+gst-launch-1.0 \
+    multifilesrc location=frames/frame_%03d.png caps="image/png,framerate=30/1" \
+    ! pngdec \
+    ! videoconvert \
+    ! videorate \
+    ! vp9enc \
+    ! webmmux \
+    ! filesink location=frames/video9.webm
 
 echo "Cleanup..."
 

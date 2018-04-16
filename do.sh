@@ -26,3 +26,22 @@ docker run -it \
     $TAG \
     ./experiment /data/video.mkv
 
+docker run -it \
+    --volume $(readlink -f frames):/data:ro \
+    --device /dev/dri/renderD128 \
+    $TAG \
+    ./experiment /data/video.avi
+
+
+docker run -it \
+    --volume $(readlink -f frames):/data:ro \
+    --device /dev/dri/renderD128 \
+    $TAG \
+    ./experiment /data/video8.webm
+
+docker run -it \
+    --volume $(readlink -f frames):/data:ro \
+    --device /dev/dri/renderD128 \
+    $TAG \
+    ./experiment /data/video9.webm
+

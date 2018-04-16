@@ -3,6 +3,7 @@
 #include <string>
 #include <vector>
 #include <thread>
+#include <math.h>
 
 #include <gst/gst.h>
 #include <gst/base/gstbasesink.h>
@@ -241,22 +242,84 @@ int main(int argc, const char * argv[])
     if (!changeState(pipeline, GST_STATE_PLAYING))
         return 6;
 
-    sleepForSec(1);
+    {
+        GstClock * clock = gst_element_get_clock(GST_ELEMENT(pipeline));
+        if (!clock)
+        {
+            cout << "No clock!" << endl;
+        }
+        else
+        {
+            cout << "Resolution: " << GST_TIME_AS_NSECONDS(gst_clock_get_resolution(clock)) << " ns" << endl;
+            for (int j = 0; j < 10; ++j)
+                cout << "Time: " << GST_TIME_AS_NSECONDS(gst_clock_get_time(clock)) << " ns" << endl;
+            gst_object_unref(clock);
+        }
+    }
+
+    double ns_per_frame = 0;
+    {
+        gint64 f_time = -1, f_frames = -1;
+        if (gst_element_query_duration(GST_ELEMENT(sink), GST_FORMAT_TIME, &f_time) &&
+            gst_element_query_duration(GST_ELEMENT(sink), GST_FORMAT_DEFAULT, &f_frames))
+        {
+            ns_per_frame = (double)f_time / (double)f_frames;
+            cout << "ns_per_frame: " << ns_per_frame << endl;
+        }
+        else
+        {
+            cout << "ns_per_frame to be detected..." << endl;
+        }
+    }
+
+//    {
+//        GstSample * sample = gst_app_sink_pull_preroll(GST_APP_SINK(sink));
+//        if (!sample)
+//            cout << "Bad preroll sample" << endl;
+//        else
+//            gst_sample_unref(sample);
+//    }
+
+//    sleepForSec(1);
 
     {
-        GST_DEBUG_BIN_TO_DOT_FILE(GST_BIN(pipeline), GST_DEBUG_GRAPH_SHOW_ALL, "dump");
+//        GST_DEBUG_BIN_TO_DOT_FILE(GST_BIN(pipeline), GST_DEBUG_GRAPH_SHOW_ALL, "dump");
         cout << endl << endl << "====================================" << endl << endl;
-        int idx = 0;
+        gint64 prev_time = -1;
+        int idx = -1;
         while (true)
         {
-            cout << "============" << idx++ << " ==========" << endl;
+            cout << "============" << ++idx << " ==========" << endl;
             gboolean eos = gst_app_sink_is_eos(GST_APP_SINK(sink));
             if (eos)
             {
                 cout << "EOS!" << endl;
                 break;
             }
-            printPipeline(pipeline, gst_element_query_position, "Position");
+
+            {
+                gint64 f_time = -1;
+                gst_element_query_position(GST_ELEMENT(pipeline), GST_FORMAT_TIME, &f_time);
+                if (ns_per_frame != 0)
+                {
+                    long pos = lrint(f_time / ns_per_frame);
+                    long diff = idx - pos + 1;
+                    cout << "Position: " << f_time << "ns ==> Frame " << pos << " (diff " << diff  << ")" <<  endl;
+//                    if (diff != 0)
+//                    {
+//                        printPipeline(pipeline, gst_element_query_position, "Position");
+//                    }
+                }
+                else if (prev_time != -1)
+                {
+                    ns_per_frame = f_time - prev_time;
+                    cout << "ns_per_frame set to " << ns_per_frame << endl;
+                }
+                if (prev_time == -1)
+                    prev_time = f_time;
+
+            }
+
             GstSample * sample = gst_app_sink_pull_sample(GST_APP_SINK(sink));
             if (!sample)
             {
