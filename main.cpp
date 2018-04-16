@@ -92,7 +92,7 @@ static void printPipeline(GstPipeline * pipeline, QueryFun fun, const string &nm
 
 static void printSample(GstSample * sample)
 {
-    cout << "Sample: " << sample << endl;
+    cout << "Sample: " << sample;
 
 //    const GstSegment * seg = gst_sample_get_segment(sample);
 //    cout << "  segment: " << seg << endl;
@@ -120,17 +120,17 @@ static void printSample(GstSample * sample)
 //        g_free(str);
 //    }
 
-//    GstBuffer * buf = gst_sample_get_buffer(sample);
-//    if (buf)
-//    {
-//        GstMapInfo info;
-//        gst_buffer_map(buf, &info, GST_MAP_READ);
-//        uint hash = 0;
-//        for (size_t i = 0; i < info.size; ++i)
-//            hash ^= info.data[i];
-//        cout << "  Hash: " << hash << ", Size: " << info.size << endl;
-//        gst_buffer_unmap(buf, &info);
-//    }
+    GstBuffer * buf = gst_sample_get_buffer(sample);
+    if (buf)
+    {
+        GstMapInfo info;
+        gst_buffer_map(buf, &info, GST_MAP_READ);
+        uint hash = 0;
+        for (size_t i = 0; i < info.size; ++i)
+            hash ^= info.data[i];
+        cout << "  Hash: " << hash << ", Size: " << info.size << endl;
+        gst_buffer_unmap(buf, &info);
+    }
 
 //    GstCaps * caps = gst_sample_get_caps(sample);
 //    cout << "  caps: " << caps << endl;
@@ -161,6 +161,7 @@ static void printSample(GstSample * sample)
 //            cout << "      GST_MEMORY_FLAG_NOT_MAPPABLE: " << (f & GST_MEMORY_FLAG_NOT_MAPPABLE ? "YES" : "NO") << endl;
 //        }
 //    }
+    cout << endl;
 }
 
 inline string gstStateName(GstState s)
@@ -183,7 +184,7 @@ inline bool changeState(GstPipeline *pipeline, GstState state)
         res =  gst_element_get_state(GST_ELEMENT(pipeline), NULL, NULL, GST_CLOCK_TIME_NONE);
     if (res != GST_STATE_CHANGE_SUCCESS)
     {
-        cerr << "Failed to go to state" << gstStateName(state) << ": " << res << endl;
+        cerr << "Failed to go to state " << gstStateName(state) << ": " << res << endl;
         return false;
     }
     cout << "State changed to " << gstStateName(state) << endl;
@@ -209,7 +210,7 @@ int main(int argc, const char * argv[])
     cout << "Filename: " << filename << endl;
     stringstream p;
     p << "uridecodebin uri=file://" << filename << " ! "
-      << "appsink name=sink sync=false drop=false max-buffers=2 emit-signals=false qos=false";
+      << "appsink name=sink sync=false drop=false max-buffers=1 emit-signals=false";
     cout << "Pipeline: " << p.str() << endl;
 
     GError * err = NULL;
@@ -245,17 +246,23 @@ int main(int argc, const char * argv[])
     {
         GST_DEBUG_BIN_TO_DOT_FILE(GST_BIN(pipeline), GST_DEBUG_GRAPH_SHOW_ALL, "dump");
         cout << endl << endl << "====================================" << endl << endl;
-        for (int idx = 0; idx < 100; ++idx)
+        int idx = 0;
+        while (true)
         {
+            cout << "============" << idx++ << " ==========" << endl;
             gboolean eos = gst_app_sink_is_eos(GST_APP_SINK(sink));
             if (eos)
             {
                 cout << "EOS!" << endl;
                 break;
             }
-            cout << "============" << idx << " ==========" << endl;
             printPipeline(pipeline, gst_element_query_position, "Position");
             GstSample * sample = gst_app_sink_pull_sample(GST_APP_SINK(sink));
+            if (!sample)
+            {
+                cout << "Bad sample" << endl;
+                continue;
+            }
             printSample(sample);
             gst_sample_unref(sample);
         }
