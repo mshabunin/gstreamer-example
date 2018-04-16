@@ -211,7 +211,7 @@ int main(int argc, const char * argv[])
     cout << "Filename: " << filename << endl;
     stringstream p;
     p << "uridecodebin uri=file://" << filename << " ! "
-      << "appsink name=sink sync=false drop=false max-buffers=1 emit-signals=false";
+      << "appsink name=sink async=false sync=false drop=false max-buffers=1 emit-signals=false";
     cout << "Pipeline: " << p.str() << endl;
 
     GError * err = NULL;
@@ -233,6 +233,11 @@ int main(int argc, const char * argv[])
         cout << "Bad pipeline or sink!" << endl;
         return 5;
     }
+
+    gst_pipeline_use_clock(GST_PIPELINE(pipeline), NULL);
+
+    cout << "Sink async: " << boolalpha << (bool)gst_base_sink_is_async_enabled(GST_BASE_SINK(sink)) << endl;
+    cout << "Sink sync: " << boolalpha << (bool)gst_base_sink_get_sync(GST_BASE_SINK(sink)) << endl;
 
     if (!changeState(pipeline, GST_STATE_PAUSED))
         return 6;
@@ -272,14 +277,6 @@ int main(int argc, const char * argv[])
         }
     }
 
-//    {
-//        GstSample * sample = gst_app_sink_pull_preroll(GST_APP_SINK(sink));
-//        if (!sample)
-//            cout << "Bad preroll sample" << endl;
-//        else
-//            gst_sample_unref(sample);
-//    }
-
 //    sleepForSec(1);
 
     {
@@ -299,16 +296,17 @@ int main(int argc, const char * argv[])
 
             {
                 gint64 f_time = -1;
-                gst_element_query_position(GST_ELEMENT(pipeline), GST_FORMAT_TIME, &f_time);
+                gst_element_query_position(GST_ELEMENT(sink), GST_FORMAT_TIME, &f_time);
                 if (ns_per_frame != 0)
                 {
-                    long pos = lrint(f_time / ns_per_frame);
-                    long diff = idx - pos + 1;
-                    cout << "Position: " << f_time << "ns ==> Frame " << pos << " (diff " << diff  << ")" <<  endl;
-//                    if (diff != 0)
-//                    {
+                    long pos = lrint(f_time / ns_per_frame) - 1;
+                    long diff = idx - pos;
+                    cout << "Position: " << f_time / 1000000. << " ms ==> Frame " << pos << " (diff " << diff  << ")" <<  endl;
+                    if (diff != 0)
+                    {
+                        cout << "!!!!!" << endl;
 //                        printPipeline(pipeline, gst_element_query_position, "Position");
-//                    }
+                    }
                 }
                 else if (prev_time != -1)
                 {
@@ -320,7 +318,7 @@ int main(int argc, const char * argv[])
 
             }
 
-            GstSample * sample = gst_app_sink_pull_sample(GST_APP_SINK(sink));
+            GstSample * sample = gst_app_sink_try_pull_sample(GST_APP_SINK(sink), 5 * GST_SECOND);
             if (!sample)
             {
                 cout << "Bad sample" << endl;

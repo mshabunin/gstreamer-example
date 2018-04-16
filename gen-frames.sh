@@ -27,7 +27,7 @@ echo "Encoding..."
 #===============================================================================================
 
 gst-launch-1.0 \
-    multifilesrc location=frames/frame_%03d.png caps="image/png,framerate=30/1" \
+    multifilesrc location=frames/frame_%03d.png caps="image/png,framerate=10/1" \
     ! pngdec \
     ! videoconvert \
     ! videorate \
@@ -36,7 +36,7 @@ gst-launch-1.0 \
     ! filesink location=frames/video.mkv
 
 gst-launch-1.0 \
-    multifilesrc location=frames/frame_%03d.png caps="image/png,framerate=30/1" \
+    multifilesrc location=frames/frame_%03d.png caps="image/png,framerate=10/1" \
     ! pngdec \
     ! videoconvert \
     ! videorate \
@@ -45,7 +45,7 @@ gst-launch-1.0 \
     ! filesink location=frames/video.mp4
 
 gst-launch-1.0 \
-    multifilesrc location=frames/frame_%03d.png caps="image/png,framerate=30/1" \
+    multifilesrc location=frames/frame_%03d.png caps="image/png,framerate=10/1" \
     ! pngdec \
     ! videoconvert \
     ! videorate \
@@ -56,7 +56,7 @@ gst-launch-1.0 \
 #===============================================================================================
 
 gst-launch-1.0 \
-    multifilesrc location=frames/frame_%03d.png caps="image/png,framerate=30/1" \
+    multifilesrc location=frames/frame_%03d.png caps="image/png,framerate=10/1" \
     ! pngdec \
     ! videoconvert \
     ! videorate \
@@ -65,7 +65,7 @@ gst-launch-1.0 \
     ! filesink location=frames/video8.webm
 
 gst-launch-1.0 \
-    multifilesrc location=frames/frame_%03d.png caps="image/png,framerate=30/1" \
+    multifilesrc location=frames/frame_%03d.png caps="image/png,framerate=10/1" \
     ! pngdec \
     ! videoconvert \
     ! videorate \
