@@ -5,11 +5,12 @@
 #include <thread>
 #include <math.h>
 
+using namespace std;
+
 #include <gst/gst.h>
 #include <gst/base/gstbasesink.h>
 #include <gst/app/gstappsink.h>
 
-using namespace std;
 
 inline void sleepForSec(int sec)
 {
@@ -162,7 +163,6 @@ static void printSample(GstSample * sample)
 //            cout << "      GST_MEMORY_FLAG_NOT_MAPPABLE: " << (f & GST_MEMORY_FLAG_NOT_MAPPABLE ? "YES" : "NO") << endl;
 //        }
 //    }
-    cout << endl;
 }
 
 inline string gstStateName(GstState s)
@@ -211,7 +211,7 @@ int main(int argc, const char * argv[])
     cout << "Filename: " << filename << endl;
     stringstream p;
     p << "uridecodebin uri=file://" << filename << " ! "
-      << "appsink name=sink async=false sync=false drop=false max-buffers=1 emit-signals=false wait-on-eos=false";
+      << "appsink name=sink sync=false async=false drop=false max-buffers=1 emit-signals=false wait-on-eos=false";
     cout << "Pipeline: " << p.str() << endl;
 
     GError * err = NULL;
@@ -287,16 +287,13 @@ int main(int argc, const char * argv[])
         }
     }
 
-//    sleepForSec(1);
-
     {
-//        GST_DEBUG_BIN_TO_DOT_FILE(GST_BIN(pipeline), GST_DEBUG_GRAPH_SHOW_ALL, "dump");
-        cout << endl << endl << "====================================" << endl << endl;
         gint64 prev_time = -1;
         int idx = -1;
-        while (idx < 5)
+        while (true)
         {
-            cout << "============" << ++idx << " ==========" << endl;
+            ++idx;
+            cout << "*** " << idx << endl;
             gboolean eos = gst_app_sink_is_eos(GST_APP_SINK(sink));
             if (eos)
             {
@@ -306,34 +303,19 @@ int main(int argc, const char * argv[])
 
             {
                 gint64 f_time = -1;
-                for (int i = 0; i < 10; ++i)
-                {
-                    gint64 prev = f_time;
-                    gst_element_query_position(GST_ELEMENT(sink), GST_FORMAT_TIME, &f_time);
-                    cout << "...." << f_time << endl;
-                    if (prev > 0 && prev != f_time)
-                        cout << "try " << i << " - " << prev << " != " << f_time << endl;
-                    prev = f_time;
-                }
+                gst_element_query_position(GST_ELEMENT(sink), GST_FORMAT_TIME, &f_time);
                 if (ns_per_frame != 0)
                 {
                     long pos = lrint(f_time / ns_per_frame) - 1;
                     long diff = idx - pos;
-                    cout << "Position: " << f_time / 1000000. << " ms ==> Frame " << pos << " (diff " << diff  << ")" <<  endl;
-                    if (diff != 0)
-                    {
-                        cout << "!!!!!" << endl;
-//                        printPipeline(pipeline, gst_element_query_position, "Position");
-                    }
+                    cout << "Position: " << f_time / 1000000. << " ms ==> Frame " << pos << " (diff " << diff  << ")" << (diff > 0 ? " <-------------" : "") <<  endl;
                 }
-                else if (prev_time != -1)
-                {
-                    ns_per_frame = f_time - prev_time;
-                    cout << "ns_per_frame set to " << ns_per_frame << endl;
-                }
-                if (prev_time == -1)
-                    prev_time = f_time;
-
+//                if (ns_per_frame == 0 && prev_time == -1)
+//                {
+//                    ns_per_frame = f_time - prev_time;
+//                    cout << "ns_per_frame set to " << ns_per_frame << endl;
+//                }
+//                prev_time = f_time;
             }
 
             GstSample * sample = gst_app_sink_try_pull_sample(GST_APP_SINK(sink), 5 * GST_SECOND);
@@ -342,8 +324,9 @@ int main(int argc, const char * argv[])
                 cout << "Bad sample" << endl;
                 continue;
             }
-            printSample(sample);
+//            printSample(sample);
             gst_sample_unref(sample);
+
         }
     }
 
@@ -353,3 +336,4 @@ int main(int argc, const char * argv[])
     gst_deinit();
     return 0;
 }
+

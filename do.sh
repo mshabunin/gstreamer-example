@@ -8,8 +8,8 @@ set -x
 TAG=gst-experiment
 
 docker build \
-    --build-arg https_proxy=$https_proxy \
-    --build-arg http_proxy=$http_proxy \
+    --build-arg https_proxy=https://$https_proxy \
+    --build-arg http_proxy=http://$http_proxy \
     --build-arg WITH_VA=1 \
     -t $TAG \
     .
