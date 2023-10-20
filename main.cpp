@@ -145,24 +145,25 @@ static void printSample(GstSample * sample)
 
 
 //    GstBuffer * buf = gst_sample_get_buffer(sample);
-//    cout << "  buf: " << buf << endl;
-//    if (buf)
-//    {
-//        cout << "    size: " << gst_buffer_get_size(buf) << endl;
-//        guint mems = gst_buffer_n_memory(buf);
-//        for (guint i = 0; i < mems; ++i)
-//        {
-//            GstMemory * mem = gst_buffer_peek_memory(buf, i);
-//            guint f = GST_MEMORY_FLAGS(mem);
-//            cout << "    mem " << i << ": " << mem << " / " << gst_object_get_name(GST_OBJECT(mem->allocator)) << endl;
-//            cout << "      GST_MEMORY_FLAG_READONLY: " << (f & GST_MEMORY_FLAG_READONLY ? "YES" : "NO") << endl;
-//            cout << "      GST_MEMORY_FLAG_NO_SHARE: " << (f & GST_MEMORY_FLAG_NO_SHARE ? "YES" : "NO") << endl;
-//            cout << "      GST_MEMORY_FLAG_ZERO_PREFIXED: " << (f & GST_MEMORY_FLAG_ZERO_PREFIXED ? "YES" : "NO") << endl;
-//            cout << "      GST_MEMORY_FLAG_ZERO_PADDED: " << (f & GST_MEMORY_FLAG_ZERO_PADDED ? "YES" : "NO") << endl;
-//            cout << "      GST_MEMORY_FLAG_PHYSICALLY_CONTIGUOUS: " << (f & GST_MEMORY_FLAG_PHYSICALLY_CONTIGUOUS ? "YES" : "NO") << endl;
-//            cout << "      GST_MEMORY_FLAG_NOT_MAPPABLE: " << (f & GST_MEMORY_FLAG_NOT_MAPPABLE ? "YES" : "NO") << endl;
-//        }
-//    }
+   cout << "  buf: " << buf << endl;
+   if (buf)
+   {
+       cout << "    PTS:  " << GST_BUFFER_PTS(buf) << endl;
+    //    cout << "    size: " << gst_buffer_get_size(buf) << endl;
+    //    guint mems = gst_buffer_n_memory(buf);
+    //    for (guint i = 0; i < mems; ++i)
+    //    {
+    //        GstMemory * mem = gst_buffer_peek_memory(buf, i);
+    //        guint f = GST_MEMORY_FLAGS(mem);
+    //        cout << "    mem " << i << ": " << mem << " / " << gst_object_get_name(GST_OBJECT(mem->allocator)) << endl;
+    //        cout << "      GST_MEMORY_FLAG_READONLY: " << (f & GST_MEMORY_FLAG_READONLY ? "YES" : "NO") << endl;
+    //        cout << "      GST_MEMORY_FLAG_NO_SHARE: " << (f & GST_MEMORY_FLAG_NO_SHARE ? "YES" : "NO") << endl;
+    //        cout << "      GST_MEMORY_FLAG_ZERO_PREFIXED: " << (f & GST_MEMORY_FLAG_ZERO_PREFIXED ? "YES" : "NO") << endl;
+    //        cout << "      GST_MEMORY_FLAG_ZERO_PADDED: " << (f & GST_MEMORY_FLAG_ZERO_PADDED ? "YES" : "NO") << endl;
+    //        cout << "      GST_MEMORY_FLAG_PHYSICALLY_CONTIGUOUS: " << (f & GST_MEMORY_FLAG_PHYSICALLY_CONTIGUOUS ? "YES" : "NO") << endl;
+    //        cout << "      GST_MEMORY_FLAG_NOT_MAPPABLE: " << (f & GST_MEMORY_FLAG_NOT_MAPPABLE ? "YES" : "NO") << endl;
+    //    }
+   }
 }
 
 inline string gstStateName(GstState s)
@@ -258,7 +259,7 @@ int main(int argc, const char * argv[])
         return 6;
 
     {
-        GstClock * clock = gst_element_get_clock(GST_ELEMENT(pipeline));
+        GstClock * clock = gst_pipeline_get_pipeline_clock(pipeline);
         if (!clock)
         {
             cout << "No clock!" << endl;
@@ -303,20 +304,46 @@ int main(int argc, const char * argv[])
 
             {
                 gint64 f_time = -1;
-                gst_element_query_position(GST_ELEMENT(sink), GST_FORMAT_TIME, &f_time);
-                if (ns_per_frame != 0)
+                cout << "QTime: ";
+                if (gst_element_query_position(GST_ELEMENT(sink), GST_FORMAT_TIME, &f_time))
                 {
-                    long pos = lrint(f_time / ns_per_frame) - 1;
-                    long diff = idx - pos;
-                    cout << "Position: " << f_time / 1000000. << " ms ==> Frame " << pos << " (diff " << diff  << ")" << (diff > 0 ? " <-------------" : "") <<  endl;
+                    cout << GST_TIME_AS_MSECONDS(f_time) << " ms";
                 }
-//                if (ns_per_frame == 0 && prev_time == -1)
+                else 
+                {
+                    cout << "NO";
+                }
+                cout << endl;
+            }
+            if (0)
+            {
+                gint64 f_frame = -1;
+                cout << "QFrame: ";                
+                if (gst_element_query_position(GST_ELEMENT(sink), GST_FORMAT_DEFAULT, &f_frame))
+                {
+                    cout << f_frame;
+                }
+                else 
+                {
+                    cout << "NO";
+                }
+                cout << endl;
+            }
+
+//                 cout << "Position: " << GST_TIME_AS_MSECONDS(f_time) << " ms";
+//                 if (ns_per_frame != 0)
+//                 {
+//                     long pos = lrint(f_time / ns_per_frame) - 1;
+//                     long diff = idx - pos;
+//                     cout << "==> Frame " << pos << " (diff " << diff  << ")" << (diff > 0 ? " <-------------" : "");
+//                 }
+//                 cout << endl;
+// //                if (ns_per_frame == 0 && prev_time == -1)
 //                {
 //                    ns_per_frame = f_time - prev_time;
 //                    cout << "ns_per_frame set to " << ns_per_frame << endl;
 //                }
 //                prev_time = f_time;
-            }
 
             GstSample * sample = gst_app_sink_try_pull_sample(GST_APP_SINK(sink), 5 * GST_SECOND);
             if (!sample)
@@ -324,7 +351,7 @@ int main(int argc, const char * argv[])
                 cout << "Bad sample" << endl;
                 continue;
             }
-//            printSample(sample);
+            printSample(sample);
             gst_sample_unref(sample);
 
         }

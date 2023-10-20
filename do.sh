@@ -7,10 +7,8 @@ set -x
 
 TAG=gst-experiment
 
+    # --build-arg WITH_VA=1 \
 docker build \
-    --build-arg https_proxy=https://$https_proxy \
-    --build-arg http_proxy=http://$http_proxy \
-    --build-arg WITH_VA=1 \
     -t $TAG \
     .
 
